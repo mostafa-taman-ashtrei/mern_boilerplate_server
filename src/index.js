@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const Db = require('./config/db');
 const authRoutes = require('./routes/auth');
@@ -17,6 +18,7 @@ const main = async () => {
     app.use(cors({ credentials: true, origin: process.env.ORIGIN, optionsSuccessStatus: 200 }));
     app.use(morgan('dev'));
     app.use(express.json());
+    app.use(cookieParser());
     app.use('/auth', authRoutes);
 
     if (process.env.NODE_ENV === 'production') {

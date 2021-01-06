@@ -1,5 +1,7 @@
 const { Router } = require('express');
-const { hash } = require('bcrypt');
+const { hash, compare } = require('bcrypt');
+const { sign } = require('jsonwebtoken');
+const cookie = require('cookie');
 
 const User = require('../models/User');
 
@@ -37,6 +39,40 @@ router.post('/register', async (req, res) => {
         });
 
         return res.status(200).json({ user: newUser });
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({ Error: e });
+    }
+});
+
+router.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        const errors = {};
+
+        if (username === '') errors.username = 'Username is Required ...';
+        if (password === '') errors.password = 'Password is Required ...';
+
+        if (Object.keys(errors).length > 0) return res.status(400).json(errors);
+
+        const user = await User.findOne({ username });
+        if (!user) return res.status(404).json({ username: 'invalid username ...' });
+
+        const matchPwd = await compare(password, user.password);
+        if (!matchPwd) return res.status(404).json({ password: 'invalid password ...' });
+
+        const token = sign({ username }, process.env.JWT_SECRET);
+
+        res.set('Set-Cookie', cookie.serialize('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 3600,
+            path: '/',
+        }));
+
+        return res.status(200).json({ user, token });
     } catch (e) {
         console.log(e);
         return res.status(500).json({ Error: e });
