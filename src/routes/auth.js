@@ -4,6 +4,7 @@ const { sign } = require('jsonwebtoken');
 const cookie = require('cookie');
 
 const User = require('../models/User');
+const isAuth = require('../middlewares/isAuth');
 
 const router = new Router();
 
@@ -77,6 +78,20 @@ router.post('/login', async (req, res) => {
         console.log(e);
         return res.status(500).json({ Error: e });
     }
+});
+
+router.get('/me', isAuth, (_, res) => res.json(res.locals.user));
+
+router.get('/logout', isAuth, (_, res) => {
+    res.set('Set-Cookie', cookie.serialize('token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        expires: new Date(0),
+        path: '/',
+    }));
+
+    return res.status(200).json({ msg: 'you are logged out ...' });
 });
 
 module.exports = router;
